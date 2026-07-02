@@ -260,11 +260,20 @@ const MASTER_PASS = "unila2026";
 let newsImageFile = null;
 let newsVideoFile = null;
 let newsVideoThumbFile = null;
+
+// Informações da mídia
+let newsImageWidth = 0;
+let newsImageHeight = 0;
+let newsImageOrientation = "horizontal";
+
+let newsVideoWidth = 0;
+let newsVideoHeight = 0;
+let newsVideoOrientation = "horizontal";
+
 let editingNewsId = null;
 let editingNewsOldImagePublicId = null;
 let editingNewsOldVideoPublicId = null;
 let editingNewsOldVideoThumbPublicId = null;
-
 // Atualizar data/hora automaticamente
 function updateDateTime() {
   const now = new Date();
@@ -281,10 +290,41 @@ updateDateTime();
 
 // Event listeners para upload de imagem
 document.getElementById('newsImageUpload').addEventListener('change', function(event) {
-  newsImageFile = event.target.files[0];
-  updateMediaPreview();
-});
 
+    newsImageFile = event.target.files[0];
+
+    if (newsImageFile) {
+
+        const img = new Image();
+
+        img.onload = function () {
+
+            newsImageWidth = img.width;
+            newsImageHeight = img.height;
+
+            if (img.width > img.height) {
+                newsImageOrientation = "horizontal";
+            } else if (img.height > img.width) {
+                newsImageOrientation = "vertical";
+            } else {
+                newsImageOrientation = "square";
+            }
+
+            console.log("Imagem:");
+            console.log(newsImageWidth, newsImageHeight);
+            console.log(newsImageOrientation);
+
+            updateMediaPreview();
+
+        };
+
+        img.src = URL.createObjectURL(newsImageFile);
+
+    } else {
+        updateMediaPreview();
+    }
+
+});
 // Event listeners para upload de vídeo
 document.getElementById('newsVideoUpload').addEventListener('change', function(event) {
   newsVideoFile = event.target.files[0];
@@ -566,6 +606,11 @@ async function submitNews() {
       content: content,
       imageUrl: imageUrl,
       imagePublicId: imagePublicId,
+      imageInfo: {
+    width: newsImageWidth,
+    height: newsImageHeight,
+    orientation: newsImageOrientation
+},
       videoUrl: videoUrl,
       videoPublicId: videoPublicId,
       videoThumbUrl: videoThumbUrl,
