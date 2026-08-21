@@ -110,7 +110,24 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0;
 .thumb-customization h5 { font-size: 13px; color: #a78bfa; margin-bottom: 12px; display: flex; align-items: center; gap: 5px; }
 .custom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 </style>
-
+<style id="ugc-reports-admin-style">
+  #ugcReportsManager .section-body{padding-top:12px}
+  .ugc-report-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
+  .ugc-report-toolbar select{flex:1;min-width:160px;padding:10px;border:1px solid #334155;border-radius:8px;background:#0f172a;color:#e0e0e0;font-family:inherit}
+  .ugc-report-count{font-size:11px;color:#94a3b8}
+  .ugc-report-card{background:rgba(15,23,42,.72);border:1px solid rgba(255,255,255,.12);border-radius:10px;padding:13px;margin-bottom:10px}
+  .ugc-report-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start;margin-bottom:9px}
+  .ugc-report-head strong{color:#c084fc;font-size:13px}
+  .ugc-report-status{font-size:10px;padding:4px 7px;border-radius:999px;background:#f59e0b;color:#111827;font-weight:700;text-transform:uppercase;letter-spacing:.4px}
+  .ugc-report-status.resolved{background:#22c55e;color:#052e16}
+  .ugc-report-status.ignored{background:#64748b;color:#fff}
+  .ugc-report-row{font-size:12px;color:#cbd5e1;line-height:1.45;margin:5px 0}
+  .ugc-report-row b{color:#94a3b8}
+  .ugc-report-content{background:rgba(255,255,255,.05);border-left:3px solid #8b5cf6;border-radius:6px;padding:9px;margin:9px 0;color:#f8fafc;white-space:pre-wrap;word-break:break-word}
+  .ugc-report-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+  .ugc-report-actions button{margin:0}
+  .ugc-report-empty{padding:18px;text-align:center;color:#94a3b8;font-size:13px}
+</style>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 </head>
@@ -212,6 +229,28 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0;
       <h4 style="margin-top:30px; margin-bottom:15px;">Notícias Publicadas</h4>
       <div id="newsList"></div>
     </div>
+  </div>
+</div>
+
+
+<!-- Seção aditiva de moderação de denúncias -->
+<div id="ugcReportsManager" class="section" style="display:none;">
+  <div class="section-header" onclick="this.nextElementSibling.classList.toggle('open')">
+    <h3>🚩 Denúncias e Moderação</h3>
+    <span>▼</span>
+  </div>
+  <div class="section-body">
+    <div class="ugc-report-toolbar">
+      <select id="ugcReportStatusFilter" onchange="loadUGCReports()" aria-label="Filtrar denúncias por status">
+        <option value="open">Abertas</option>
+        <option value="resolved">Resolvidas</option>
+        <option value="ignored">Ignoradas</option>
+        <option value="all">Todas</option>
+      </select>
+      <span id="ugcReportCount" class="ugc-report-count">0 denúncias</span>
+      <button class="btn-action btn-edit" onclick="loadUGCReports()">↻ Atualizar</button>
+    </div>
+    <div id="ugcReportsList"><div class="ugc-report-empty">Carregando denúncias...</div></div>
   </div>
 </div>
 
@@ -960,11 +999,107 @@ function checkLogin() {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('adminContent').style.display = 'block';
     document.getElementById('newsManagerSection').style.display = 'block';
-    loadData(); loadNews();
+    loadData(); loadNews(); loadUGCReports();
+    document.getElementById('ugcReportsManager').style.display = 'block';
   } else showToast("Senha incorreta!", "error");
 }
 
 document.getElementById('adminPass').addEventListener('keypress', function(e) { if (e.key === 'Enter') checkLogin(); });
+</script>
+
+<script id="ugc-reports-admin-script">
+let ugcReportsUnsubscribe = null;
+let ugcReportsCache = [];
+
+function escapeUGCAdmin(value) {
+  return String(value == null ? '' : value).replace(/[&<>"']/g, function(char) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char];
+  });
+}
+
+function formatUGCReportDate(value) {
+  try {
+    if (value && typeof value.toDate === 'function') return value.toDate().toLocaleString('pt-BR');
+    if (value && typeof value.seconds === 'number') return new Date(value.seconds * 1000).toLocaleString('pt-BR');
+    if (typeof value === 'number') return new Date(value).toLocaleString('pt-BR');
+    if (value) return new Date(value).toLocaleString('pt-BR');
+  } catch (e) {}
+  return 'Data indisponível';
+}
+
+function getUGCReportTypeLabel(type) {
+  return ({chat:'Mensagem do Chat', ad:'Anúncio', ad_reply:'Resposta de anúncio', user:'Usuário'})[type] || type || 'Conteúdo';
+}
+
+function getUGCReportStatusLabel(status) {
+  return ({open:'Aberta', resolved:'Resolvida', ignored:'Ignorada'})[status] || status || 'Aberta';
+}
+
+function loadUGCReports() {
+  const list = document.getElementById('ugcReportsList');
+  if (!list) return;
+  list.innerHTML = '<div class="ugc-report-empty">Carregando denúncias...</div>';
+  if (ugcReportsUnsubscribe) ugcReportsUnsubscribe();
+  let query = db.collection('ugc_reports').orderBy('createdAt', 'desc').limit(200);
+  ugcReportsUnsubscribe = query.onSnapshot(snapshot => {
+    ugcReportsCache = [];
+    snapshot.forEach(doc => ugcReportsCache.push({ id: doc.id, ...doc.data() }));
+    renderUGCReports();
+  }, error => {
+    console.error('Erro ao carregar denúncias:', error);
+    list.innerHTML = '<div class="ugc-report-empty" style="color:#fca5a5;">Não foi possível carregar as denúncias. Verifique as regras do Firestore.</div>';
+    showToast('❌ Erro ao carregar denúncias.', 'error');
+  });
+}
+
+function renderUGCReports() {
+  const list = document.getElementById('ugcReportsList');
+  const count = document.getElementById('ugcReportCount');
+  const filter = document.getElementById('ugcReportStatusFilter')?.value || 'open';
+  const reports = ugcReportsCache.filter(report => filter === 'all' || (report.status || 'open') === filter);
+  if (count) count.textContent = reports.length + ' denúncia' + (reports.length === 1 ? '' : 's');
+  if (!reports.length) {
+    list.innerHTML = '<div class="ugc-report-empty">Nenhuma denúncia neste filtro.</div>';
+    return;
+  }
+  list.innerHTML = reports.map(function(report) {
+    const status = report.status || 'open';
+    const content = report.targetLabel || report.targetContent || report.targetId || 'Conteúdo não informado';
+    let card = '<article class="ugc-report-card" data-report-id="' + escapeUGCAdmin(report.id) + '">';
+    card += '<div class="ugc-report-head"><strong>' + escapeUGCAdmin(getUGCReportTypeLabel(report.type)) + '</strong>';
+    card += '<span class="ugc-report-status ' + escapeUGCAdmin(status) + '">' + escapeUGCAdmin(getUGCReportStatusLabel(status)) + '</span></div>';
+    card += '<div class="ugc-report-content"><b>Conteúdo denunciado</b><br>' + escapeUGCAdmin(content) + '</div>';
+    card += '<div class="ugc-report-row"><b>Motivo:</b> ' + escapeUGCAdmin(report.reason || 'Não informado') + '</div>';
+    card += '<div class="ugc-report-row"><b>Usuário denunciado:</b> ' + escapeUGCAdmin(report.targetUser || 'Não informado') + '</div>';
+    card += '<div class="ugc-report-row"><b>Denunciante:</b> ' + escapeUGCAdmin(report.reporterNick || 'Não informado') + '</div>';
+    card += '<div class="ugc-report-row"><b>Data:</b> ' + escapeUGCAdmin(formatUGCReportDate(report.createdAt)) + '</div>';
+    card += '<div class="ugc-report-row"><b>ID do alvo:</b> ' + escapeUGCAdmin(report.targetId || 'Não informado') + '</div>';
+    card += '<div class="ugc-report-actions">';
+    if (status !== 'resolved') card += '<button class="btn-action btn-edit ugc-resolve-report" data-report-id="' + escapeUGCAdmin(report.id) + '">✓ Marcar resolvida</button>';
+    if (status !== 'ignored') card += '<button class="btn-action btn-cancel ugc-ignore-report" data-report-id="' + escapeUGCAdmin(report.id) + '">Ignorar</button>';
+    if (status !== 'open') card += '<button class="btn-action btn-delete ugc-reopen-report" data-report-id="' + escapeUGCAdmin(report.id) + '">Reabrir</button>';
+    card += '</div></article>';
+    return card;
+  }).join('');
+
+  list.querySelectorAll('.ugc-resolve-report').forEach(button => button.onclick = () => updateUGCReportStatus(button.dataset.reportId, 'resolved'));
+  list.querySelectorAll('.ugc-ignore-report').forEach(button => button.onclick = () => updateUGCReportStatus(button.dataset.reportId, 'ignored'));
+  list.querySelectorAll('.ugc-reopen-report').forEach(button => button.onclick = () => updateUGCReportStatus(button.dataset.reportId, 'open'));
+}
+
+async function updateUGCReportStatus(reportId, status) {
+  try {
+    await db.collection('ugc_reports').doc(reportId).update({
+      status: status,
+      moderatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      moderatedBy: 'Painel Admin'
+    });
+    showToast('✅ Denúncia atualizada.');
+  } catch (error) {
+    console.error('Erro ao atualizar denúncia:', error);
+    showToast('❌ Não foi possível atualizar a denúncia.', 'error');
+  }
+}
 </script>
 </body>
 </html>
