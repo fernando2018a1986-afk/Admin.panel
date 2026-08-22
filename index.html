@@ -108,8 +108,16 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0;
   display: none; 
 }
 .thumb-customization h5 { font-size: 13px; color: #a78bfa; margin-bottom: 12px; display: flex; align-items: center; gap: 5px; }
-.custom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .custom-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .button-settings-note { font-size: 11px; color: #94a3b8; line-height: 1.5; margin-bottom: 14px; }
+  .button-setting-card { background: rgba(15,23,42,0.72); border: 1px solid rgba(255,255,255,0.12); border-radius: 10px; padding: 13px; margin-bottom: 12px; }
+  .button-setting-card h4 { font-size: 13px; color: #c084fc; margin-bottom: 10px; }
+  .button-setting-grid { display: grid; grid-template-columns: 1fr; gap: 10px; }
+  .button-setting-grid .form-group { margin-bottom: 0; }
+  .button-setting-grid textarea { min-height: 74px; }
+  .button-setting-grid input[type="url"] { font-size: 12px; }
 </style>
+
 <style id="ugc-reports-admin-style">
   #ugcReportsManager .section-body{padding-top:12px}
   .ugc-report-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:14px}
@@ -151,7 +159,19 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0;
     </div>
   </div>
 
-  <div id="sectionsArea"></div>
+  <div id="sectionsArea" style="display:none;"></div>
+
+  <!-- Seção aditiva de edição dos botões, links e conteúdos do aplicativo -->
+  <div id="buttonSettingsSection" class="section">
+    <div class="section-header" onclick="this.nextElementSibling.classList.toggle('open')">
+      <h3>🛠️ Botões, textos e links do aplicativo</h3>
+      <span>▼</span>
+    </div>
+    <div class="section-body open">
+      <p class="button-settings-note">Edite aqui o nome exibido nos três idiomas. Para botões que abrem links, edite também a URL. Para páginas internas, edite o texto de cada idioma. As alterações são salvas no Firestore e aparecem no aplicativo após a sincronização.</p>
+      <div id="buttonSettingsList"><p style="text-align:center; padding:20px; color:#94a3b8;">Carregando configurações dos botões...</p></div>
+    </div>
+  </div>
 
   <!-- Seção de Gerenciamento de Notícias -->
   <div id="newsManagerSection" class="section" style="display:none;">
@@ -974,7 +994,7 @@ const editableButtons = [
   { id: "facebook", name: "📘 Facebook UNILA", type: "link", description: "Rede social" },
   { id: "biblioteca", name: "📖 Biblioteca UNILA", type: "link", description: "Acervo" },
   { id: "intercampi", name: "🚌 Intercampi", type: "link", description: "PDF de horários" },
-  { id: "smartec", name: "💻 Smart Tech", type: "link", description: "Smart Tech" },
+  { id: "inscreva", name: "🎓 Portal Inscreva", type: "link", description: "Portal de inscrições da UNILA" },
   { id: "editais", name: "📄 Editais Oficiais", type: "link", description: "Documentos" },
   { id: "emergencia", name: "🚨 Emergência", type: "page", description: "Telefones úteis" },
   { id: "enderecos", name: "🏫 Endereços", type: "page", description: "Localização campus" },
@@ -982,6 +1002,162 @@ const editableButtons = [
   { id: "grupo_facebook", name: "👥 Grupo FB", type: "link", description: "Comunidade" },
   { id: "dev", name: "👨‍💻 Dev Contact", type: "link", description: "Contato desenvolvedor" }
 ];
+
+const buttonSettings = [
+  { id: "chatMenu", labelKey: "chatMenu", name: "Spotted Chat", type: "action", labels: { pt: "Spotted💜 Chat💬", fr: "Spotted💜 Chat💬", es: "Spotted💜 Chat💬" } },
+  { id: "portal", labelKey: "portal", name: "🌐 Portal Oficial da UNILA", type: "link", contentId: "portal_unila", defaultValue: "https://portal.unila.edu.br/", labels: { pt: "🌐 Portal Oficial da UNILA", fr: "🌐 Portail officiel de l’UNILA", es: "🌐 Portal oficial de la UNILA" } },
+  { id: "inscreva", labelKey: "inscreva", name: "🎓 Portal Inscreva", type: "link", contentId: "inscreva", defaultValue: "https://inscreva.unila.edu.br/", labels: { pt: "🎓 Portal Inscreva", fr: "🎓 Portal Inscreva", es: "🎓 Portal Inscreva" } },
+  { id: "sigaa", labelKey: "sigaa", name: "📚 Sistema Acadêmico SIGAA", type: "link", contentId: "sigaa", defaultValue: "https://sig.unila.edu.br/sigaa/verTelaLogin.do", labels: { pt: "📚 Sistema Acadêmico SIGAA", fr: "📚 Système académique SIGAA", es: "📚 Sistema académico SIGAA" } },
+  { id: "email", labelKey: "email", name: "📧 E-mail Institucional", type: "link", contentId: "email", defaultValue: "https://mail.google.com/", labels: { pt: "📧 E-mail Institucional", fr: "📧 E-mail institutionnel", es: "📧 Correo institucional" } },
+  { id: "google", labelKey: "google", name: "🔎 Pesquisa Google", type: "link", contentId: "google", defaultValue: "https://www.google.com/", labels: { pt: "🔎 Pesquisa Google", fr: "🔎 Recherche Google", es: "🔎 Búsqueda Google" } },
+  { id: "instagram", labelKey: "instagram", name: "📸 Instagram UNILA", type: "link", contentId: "instagram", defaultValue: "https://www.instagram.com/instaunila/", labels: { pt: "📸 Instagram UNILA", fr: "📸 Instagram UNILA", es: "📸 Instagram UNILA" } },
+  { id: "facebook", labelKey: "facebook", name: "📘 Facebook UNILA", type: "link", contentId: "facebook", defaultValue: "https://www.facebook.com/unila.oficial", labels: { pt: "📘 Facebook UNILA", fr: "📘 Facebook UNILA", es: "📘 Facebook UNILA" } },
+  { id: "library", labelKey: "library", name: "📖 Biblioteca UNILA", type: "link", contentId: "biblioteca", defaultValue: "https://portal.unila.edu.br/biblioteca", labels: { pt: "📖 Biblioteca UNILA", fr: "📖 Bibliothèque UNILA", es: "📖 Biblioteca UNILA" } },
+  { id: "intercampus", labelKey: "intercampus", name: "🚌 Transporte Intercampi", type: "link", contentId: "intercampi", defaultValue: "https://portal.unila.edu.br/proagi/delog/arquivos/horario-intercampi/quadro-de-horario-intercampi.pdf", labels: { pt: "🚌 Transporte Intercampi", fr: "🚌 Transport intercampus", es: "🚌 Transporte intercampus" } },
+  { id: "notices", labelKey: "notices", name: "📄 Editais Oficiais", type: "link", contentId: "editais", defaultValue: "https://documentos.unila.edu.br/", labels: { pt: "📄 Editais Oficiais", fr: "📄 Avis officiels", es: "📄 Convocatorias oficiales" } },
+  { id: "emergency", labelKey: "emergency", name: "🚨 Telefones de Emergência", type: "page", contentId: "emergencia", labels: { pt: "🚨 Telefones de Emergência", fr: "🚨 Numéros d’urgence", es: "🚨 Teléfonos de emergencia" }, content: {
+    pt: "Polícia Militar: 190\nSAMU (Ambulância): 192\nBombeiros: 193\n\nHospital Municipal: (45) 2105-4100\nGuarda Municipal: (45) 2105-5100\nDelegacia da Mulher: (45) 3521-9200\nDefesa Civil: 199\n\nPolícia Federal: (45) 3522-1174\nPolícia Rodoviária Federal: (45) 3576-1400\n\nPrae-Unila: +55 45 3522-9983\nPrograd-Unila: +55 (45) 3522-9766\n\nDisque Denúncia: 181\nConselho Tutelar: (45) 3521-1112\nCentro de Intoxicações: 0800 722 6001\n\n⚠ Em situações graves, ligue imediatamente.",
+    fr: "Police militaire : 190\nSAMU (Ambulance) : 192\nPompiers : 193\n\nHôpital municipal : (45) 2105-4100\nPolice municipale : (45) 2105-5100\nDélégation des femmes : (45) 3521-9200\nProtection civile : 199\n\nPolice fédérale : (45) 3522-1174\nPolice routière fédérale : (45) 3576-1400\n\nPrae-Unila : +55 45 3522-9983\nPrograd-Unila : +55 (45) 3522-9766\n\nLigne de dénonciation : 181\nConseil tutélaire : (45) 3521-1112\nCentre antipoison : 0800 722 6001\n\n⚠ En cas de situation grave, appelez immédiatement.",
+    es: "Policía Militar: 190\nSAMU (Ambulancia): 192\nBomberos: 193\n\nHospital Municipal: (45) 2105-4100\nGuardia Municipal: (45) 2105-5100\nComisaría de la Mujer: (45) 3521-9200\nDefensa Civil: 199\n\nPolicía Federal: (45) 3522-1174\nPolicía Federal de Carreteras: (45) 3576-1400\n\nPrae-Unila: +55 45 3522-9983\nPrograd-Unila: +55 (45) 3522-9766\n\nLínea de denuncias: 181\nConsejo Tutelar: (45) 3521-1112\nCentro de Intoxicaciones: 0800 722 6001\n\n⚠ En situaciones graves, llama inmediatamente."
+  } },
+  { id: "addresses", labelKey: "addresses", name: "🏫 Endereços dos Campus", type: "page", contentId: "enderecos", labels: { pt: "🏫 Endereços dos Campus", fr: "🏫 Adresses des campus", es: "🏫 Direcciones de los campus" }, content: {
+    pt: "Unila - Campus PTI\nAv. Tancredo Neves, 6731 - PTI, Foz do Iguaçu - PR\n\nUnila - Campus Juarez Távora\nAv. Silvio Américo Sasdelli, 1000 - Vila A, Foz do Iguaçu - PR\n\nUnila - Campus Jardim Universitário (JU)\nAv. Tarquínio Joslin dos Santos, 1000 - Lot. Universitário das Américas, Foz do Iguaçu - PR\n\nUnila - Campus Integração\nAv. Tancredo Neves, 3147 - Foz do Iguaçu - PR",
+    fr: "Unila - Campus PTI\nAv. Tancredo Neves, 6731 - PTI, Foz do Iguaçu - PR\n\nUnila - Campus Juarez Távora\nAv. Silvio Américo Sasdelli, 1000 - Vila A, Foz do Iguaçu - PR\n\nUnila - Campus Jardim Universitário (JU)\nAv. Tarquínio Joslin dos Santos, 1000 - Lot. Universitário das Américas, Foz do Iguaçu - PR\n\nUnila - Campus Integração\nAv. Tancredo Neves, 3147 - Foz do Iguaçu - PR",
+    es: "Unila - Campus PTI\nAv. Tancredo Neves, 6731 - PTI, Foz do Iguaçu - PR\n\nUnila - Campus Juarez Távora\nAv. Silvio Américo Sasdelli, 1000 - Vila A, Foz do Iguaçu - PR\n\nUnila - Campus Jardim Universitário (JU)\nAv. Tarquínio Joslin dos Santos, 1000 - Lot. Universitário das Américas, Foz do Iguaçu - PR\n\nUnila - Campus Integração\nAv. Tancredo Neves, 3147 - Foz do Iguaçu - PR"
+  } },
+  { id: "ru", labelKey: "ru", name: "🍽️ Restaurantes Universitários", type: "page", contentId: "ru", labels: { pt: "🍽️ Restaurantes Universitários", fr: "🍽️ Restaurants universitaires", es: "🍽️ Restaurantes universitarios" }, content: {
+    pt: "RU PTI: Segunda a Sexta (11:00 - 14:00 e 17:30 - 20:00)\nRU JU: Segunda a Sexta (11:00 - 14:00 e 17:30 - 20:00)\n\nPreço para Estudantes: R$ 3,50\nPreço para Servidores: R$ 12,00\n\n⚠ Verifique feriados e horários especiais no portal oficial.",
+    fr: "RU PTI : Du lundi au vendredi (11:00 - 14:00 et 17:30 - 20:00)\nRU JU : Du lundi au vendredi (11:00 - 14:00 et 17:30 - 20:00)\n\nPrix étudiant : 3,50 R$\nPrix pour les personnels : 12,00 R$\n\n⚠ Vérifiez les jours fériés et les horaires spéciaux sur le portail officiel.",
+    es: "RU PTI: De lunes a viernes (11:00 - 14:00 y 17:30 - 20:00)\nRU JU: De lunes a viernes (11:00 - 14:00 y 17:30 - 20:00)\n\nPrecio para estudiantes: R$ 3,50\nPrecio para servidores: R$ 12,00\n\n⚠ Consulta los feriados y horarios especiales en el portal oficial."
+  } },
+  { id: "group", labelKey: "group", name: "👥 Grupo no Facebook", type: "link", contentId: "grupo_facebook", defaultValue: "https://www.facebook.com/groups/unila/", labels: { pt: "👥 Grupo no Facebook", fr: "👥 Groupe Facebook", es: "👥 Grupo de Facebook" } },
+  { id: "developer", labelKey: "developer", name: "👨‍💻 Desenvolvedor", type: "page", contentId: "dev", labels: { pt: "👨‍💻 Desenvolvedor", fr: "👨‍💻 Développeur", es: "👨‍💻 Desarrollador" }, content: {
+    pt: "Fernando - Serviço Social\nContato: +55 45 99949-9759",
+    fr: "Fernando - Travail social\nContact : +55 45 99949-9759",
+    es: "Fernando - Trabajo social\nContacto: +55 45 99949-9759"
+  } },
+  { id: "notes", labelKey: "notes", name: "📝 Anotações", type: "action", labels: { pt: "📝 Anotações", fr: "📝 Notes", es: "📝 Anotaciones" } },
+  { id: "share", labelKey: "share", name: "📤 Compartilhar App", type: "action", labels: { pt: "📤 Compartilhar App", fr: "📤 Partager l’application", es: "📤 Compartir aplicación" } },
+  { id: "internet", labelKey: "internet", name: "🌐 Internet UNILA", type: "page", contentId: "internet", labels: { pt: "🌐 Internet UNILA", fr: "🌐 Internet UNILA", es: "🌐 Internet UNILA" }, content: {
+    pt: "Rede: UNILA-WIFI\nLogin: Seu CPF ou E-mail Institucional\nSenha: A mesma senha do SIGAA\n\n⚠ Se tiver problemas, procure a TIC do seu campus.",
+    fr: "Réseau : UNILA-WIFI\nIdentifiant : Votre CPF ou e-mail institutionnel\nMot de passe : Le même mot de passe que SIGAA\n\n⚠ En cas de problème, contactez la TIC de votre campus.",
+    es: "Red: UNILA-WIFI\nInicio de sesión: Tu CPF o correo institucional\nContraseña: La misma contraseña de SIGAA\n\n⚠ Si tienes problemas, busca la TIC de tu campus."
+  } },
+  { id: "study", labelKey: "study", name: "🎓 Estude na UNILA", type: "page", contentId: "estude", labels: { pt: "🎓 Estude na UNILA", fr: "🎓 Étudier à l’UNILA", es: "🎓 Estudia en la UNILA" }, content: {
+    pt: "Ingresso para Brasileiros: Via ENEM/SISU\nIngresso para Estrangeiros: Seleção Internacional Própria\n\nCursos: Mais de 29 opções de graduação.\n\nPara mais informações acesse: portal.unila.edu.br/ingresso",
+    fr: "Admission des Brésiliens : via ENEM/SISU\nAdmission des étrangers : sélection internationale propre\n\nFormations : plus de 29 options de licence.\n\nPour plus d’informations, consultez : portal.unila.edu.br/ingresso",
+    es: "Ingreso para brasileños: por ENEM/SISU\nIngreso para extranjeros: selección internacional propia\n\nCarreras: más de 29 opciones de grado.\n\nPara más información, accede a: portal.unila.edu.br/ingresso"
+  } },
+  { id: "enem", labelKey: "enem", name: "📝 ENEM – Página do Participante", type: "link", contentId: "enem", defaultValue: "https://enem.inep.gov.br/participante/", labels: { pt: "📝 ENEM – Página do Participante", fr: "📝 ENEM – Page du participant", es: "📝 ENEM – Página del participante" } },
+  { id: "news", labelKey: "news", name: "📰 Notícias", type: "action", labels: { pt: "📰 Notícias", fr: "📰 Actualités", es: "📰 Noticias" } },
+  { id: "desapega", labelKey: "desapega", name: "🛒 Desapega Unileiro", type: "action", labels: { pt: "🛒 Desapega Unileiro", fr: "🛒 Desapega Unileiro", es: "🛒 Desapega Unileiro" } },
+  { id: "upa", labelKey: "upa", name: "🏥 Hospitais de Emergência 24h (UPA)", type: "page", contentId: "upa", labels: { pt: "🏥 Hospitais de Emergência 24h (UPA)", fr: "🏥 Hôpitaux d’urgence 24 h (UPA)", es: "🏥 Hospitales de emergencia 24 h (UPA)" }, content: {
+    pt: "UPA João Samek (Vila A): (45) 3524-8800\nUPA Morumbi: (45) 3521-1350\n\n⚠ Em casos de emergência com risco de vida, ligue 192 (SAMU).",
+    fr: "UPA João Samek (Vila A) : (45) 3524-8800\nUPA Morumbi : (45) 3521-1350\n\n⚠ En cas d’urgence vitale, appelez le 192 (SAMU).",
+    es: "UPA João Samek (Vila A): (45) 3524-8800\nUPA Morumbi: (45) 3521-1350\n\n⚠ En casos de emergencia con riesgo de vida, llama al 192 (SAMU)."
+  } }
+];
+
+function escapeButtonSettingValue(value) {
+  return String(value == null ? "" : value).replace(/[&<>"']/g, function(char) {
+    return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[char];
+  });
+}
+
+async function loadButtonSettings() {
+  const list = document.getElementById('buttonSettingsList');
+  if (!list) return;
+  list.innerHTML = '<p style="text-align:center; padding:20px; color:#94a3b8;">Sincronizando botões...</p>';
+  const values = {};
+  try {
+    const snapshot = await db.collection('admin_content').get();
+    snapshot.forEach(doc => { values[doc.id] = doc.data().value; });
+  } catch (e) {
+    showToast('❌ Não foi possível carregar as configurações dos botões.', 'error');
+  }
+  list.innerHTML = buttonSettings.map((setting) => {
+    const labelFields = ['pt','fr','es'].map(lang => `
+      <div class="form-group">
+        <label for="buttonLabel_${setting.id}_${lang}">Nome exibido (${lang.toUpperCase()})</label>
+        <input type="text" id="buttonLabel_${setting.id}_${lang}" value="${escapeButtonSettingValue(values[`button_label_${setting.labelKey}_${lang}`] ?? setting.labels[lang])}" />
+      </div>`).join('');
+    let contentField = '';
+    if (setting.type === 'link') {
+      const currentUrl = values[setting.contentId] ?? setting.defaultValue ?? '';
+      contentField = `
+        <div class="form-group">
+          <label for="buttonLink_${setting.id}">Link / URL</label>
+          <input type="url" id="buttonLink_${setting.id}" value="${escapeButtonSettingValue(currentUrl)}" placeholder="https://..." />
+        </div>`;
+    } else if (setting.type === 'page') {
+      contentField = ['pt','fr','es'].map(lang => `
+        <div class="form-group">
+          <label for="buttonContent_${setting.id}_${lang}">Conteúdo da página (${lang.toUpperCase()})</label>
+          <textarea id="buttonContent_${setting.id}_${lang}" placeholder="Texto exibido ao abrir a página">${escapeButtonSettingValue(values[`button_content_${setting.contentId}_${lang}`] ?? setting.content[lang])}</textarea>
+        </div>`).join('');
+    }
+    return `
+      <div class="button-setting-card">
+        <h4>${escapeButtonSettingValue(setting.name)}</h4>
+        <div class="button-setting-grid">
+          ${labelFields}
+          ${contentField}
+        </div>
+        <button class="btn-save" onclick="saveButtonSetting('${setting.id}')">💾 Salvar este botão</button>
+      </div>`;
+  }).join('');
+}
+
+async function saveButtonSetting(id) {
+  const setting = buttonSettings.find(item => item.id === id);
+  if (!setting) return;
+  const saveButton = document.querySelector(`button[onclick="saveButtonSetting('${id}')"]`);
+  const originalText = saveButton ? saveButton.textContent : '';
+  if (saveButton) { saveButton.disabled = true; saveButton.textContent = '⏳ Salvando...'; }
+  try {
+    const batch = db.batch();
+    ['pt','fr','es'].forEach(lang => {
+      const labelValue = document.getElementById(`buttonLabel_${id}_${lang}`).value.trim();
+      batch.set(db.collection('admin_content').doc(`button_label_${setting.labelKey}_${lang}`), {
+        value: labelValue,
+        kind: 'button_label',
+        buttonId: setting.id,
+        language: lang,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    });
+    if (setting.type === 'link') {
+      const url = document.getElementById(`buttonLink_${id}`).value.trim();
+      if (!/^https?:\/\//i.test(url)) throw new Error('Informe uma URL válida começando com http:// ou https://.');
+      batch.set(db.collection('admin_content').doc(setting.contentId), {
+        value: url,
+        kind: 'button_link',
+        buttonId: setting.id,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+      }, { merge: true });
+    } else if (setting.type === 'page') {
+      ['pt','fr','es'].forEach(lang => {
+        const contentValue = document.getElementById(`buttonContent_${id}_${lang}`).value.trim();
+        batch.set(db.collection('admin_content').doc(`button_content_${setting.contentId}_${lang}`), {
+          value: contentValue,
+          kind: 'button_content',
+          buttonId: setting.id,
+          language: lang,
+          updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+        }, { merge: true });
+      });
+    }
+    await batch.commit();
+    showToast('✅ Botão, textos e link salvos com sucesso!');
+    if (saveButton) saveButton.textContent = '✅ Salvo!';
+  } catch (e) {
+    console.error('Erro ao salvar configuração do botão:', e);
+    showToast(`❌ Erro ao salvar: ${e.message || 'Falha na conexão'}`, 'error');
+    if (saveButton) saveButton.textContent = '❌ Erro';
+  } finally {
+    if (saveButton) setTimeout(() => { saveButton.textContent = originalText; saveButton.disabled = false; }, 2000);
+  }
+}
 
 async function generateSignature(params, secret) {
   const sortedParams = Object.keys(params).sort().map(key => `${key}=${params[key]}`).join('&');
@@ -999,7 +1175,7 @@ function checkLogin() {
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('adminContent').style.display = 'block';
     document.getElementById('newsManagerSection').style.display = 'block';
-    loadData(); loadNews(); loadUGCReports();
+    loadData(); loadButtonSettings(); loadNews(); loadUGCReports();
     document.getElementById('ugcReportsManager').style.display = 'block';
   } else showToast("Senha incorreta!", "error");
 }
