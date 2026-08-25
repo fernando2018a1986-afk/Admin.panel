@@ -27,8 +27,17 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0;
 .section { background: #16213e; border-radius: 12px; margin-bottom: 15px; overflow: hidden; border: 1px solid #1f3460; }
 .section-header { display: flex; justify-content: space-between; align-items: center; padding: 15px 20px; background: #1f3460; cursor: pointer; -webkit-user-select: none; }
 .section-header h3 { font-size: 14px; display: flex; align-items: center; gap: 8px; }
-.section-body { padding: 15px; display: none; }
+  .section-body { padding: 15px; display: none; }
 .section-body.open { display: block; }
+  .section-header.active { background: linear-gradient(135deg, #312e81, #1d4ed8); }
+  .section-header .accordion-arrow { transition: transform .2s ease; }
+  .section-header.active .accordion-arrow { transform: rotate(180deg); }
+  .button-setting-header { display:flex; justify-content:space-between; align-items:center; gap:10px; cursor:pointer; padding:4px 0 10px; }
+  .button-setting-header h4 { margin:0; }
+  .button-setting-header .accordion-arrow { color:#cbd5e1; transition:transform .2s ease; }
+  .button-setting-header.active .accordion-arrow { transform:rotate(180deg); }
+  .button-setting-body { display:none; }
+  .button-setting-body.open { display:block; }
 
 .upload-area { background: rgba(255,255,255,0.05); border: 2px dashed #334155; border-radius: 8px; padding: 15px; text-align: center; margin-bottom: 15px; position: relative; }
 .btn-upload { background: #3b82f6; color: white; border: none; padding: 12px 15px; border-radius: 8px; font-size: 13px; font-weight: 600; cursor: pointer; margin-bottom: 10px; width: 100%; }
@@ -120,7 +129,20 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0;
   .conheca-media-options { display:flex; gap:12px; flex-wrap:wrap; margin: 0 0 12px; color:#cbd5e1; font-size:12px; }
   .conheca-media-options label { display:flex; align-items:center; gap:5px; }
   .conheca-admin-media { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0; }
+  .conheca-admin-media figure { margin:0; max-width:180px; }
   .conheca-admin-media img, .conheca-admin-media video { width:110px; height:90px; object-fit:cover; border-radius:8px; background:#000; }
+  .conheca-admin-media figcaption { max-width:180px; margin-top:5px; color:#e2e8f0; font-size:11px; line-height:1.3; word-break:break-word; }
+  .conheca-media-metadata { display:flex; flex-direction:column; gap:3px; margin:6px 0 10px; color:#94a3b8; font-size:11px; line-height:1.35; }
+  .conheca-media-date { margin:6px 0 10px; color:#94a3b8; font-size:11px; }
+  .conheca-media-frame { position:relative; display:inline-block; max-width:100%; background:#000; border-radius:8px; overflow:hidden; }
+  .conheca-media-frame img, .conheca-media-frame video { display:block; max-width:100%; width:180px; height:120px; object-fit:cover; border-radius:8px; background:#000; }
+  .conheca-media-date-overlay { position:absolute; right:6px; bottom:6px; padding:3px 6px; border-radius:4px; background:rgba(0,0,0,.78); color:#fff; font-size:10px; line-height:1.2; white-space:nowrap; pointer-events:none; }
+  .conheca-preview-date-overlay { position:absolute; right:5px; bottom:5px; padding:3px 5px; border-radius:4px; background:rgba(0,0,0,.78); color:#fff; font-size:9px; pointer-events:none; }
+  #conhecaMediaPreview .media-preview-item { position:relative; }
+  .conheca-thumb-preview { margin:10px 0; color:#94a3b8; font-size:11px; }
+  .conheca-thumb-preview img { display:block; width:180px; height:100px; object-fit:cover; border-radius:8px; margin-top:5px; border:1px solid #8b5cf6; }
+  .conheca-main-section { border-color: #7c3aed; }
+  .full-page-text { min-height: 230px; resize: vertical; white-space: pre-wrap; line-height: 1.5; }
 </style>
 
 <style id="ugc-reports-admin-style">
@@ -165,7 +187,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0;
 <div id="loginScreen">
   <div class="login-box">
     <h2>🔐 Admin Access</h2>
-    <input type="password" id="adminPass" placeholder="Senha do Painel" autocomplete="current-password">
+    <p style="font-size:12px;color:#94a3b8;margin-bottom:15px;">Entre com a conta administrativa do Firebase.</p>
+    <input type="email" id="adminEmail" value="fernando2018a1986@gmail.com" placeholder="E-mail do Firebase" autocomplete="username">
+    <input type="password" id="adminPass" placeholder="Senha do Firebase" autocomplete="current-password">
     <button onclick="checkLogin()">Entrar</button>
   </div>
 </div>
@@ -182,23 +206,34 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0;
 
   <div id="sectionsArea" style="display:none;"></div>
 
+  <!-- Função principal separada: somente fotos, vídeos, legendas e data -->
+  <div id="conhecaStandaloneSection" class="section conheca-main-section">
+    <div class="section-header" onclick="toggleExclusiveSection(this)" role="button" tabindex="0" aria-expanded="false">
+      <h3>🏫 Conheça a UNILA — publicações</h3>
+      <span class="accordion-arrow">▼</span>
+    </div>
+    <div class="section-body">
+      <div id="conhecaStandaloneManager"><p class="ugc-report-empty">Carregando publicações de Conheça a UNILA...</p></div>
+    </div>
+  </div>
+
   <!-- Seção aditiva de edição dos botões, links e conteúdos do aplicativo -->
   <div id="buttonSettingsSection" class="section">
-    <div class="section-header" onclick="this.nextElementSibling.classList.toggle('open')">
+    <div class="section-header" onclick="toggleExclusiveSection(this)" role="button" tabindex="0" aria-expanded="false">
       <h3>🛠️ Botões, textos e links do aplicativo</h3>
-      <span>▼</span>
+      <span class="accordion-arrow">▼</span>
     </div>
-    <div class="section-body open">
-      <p class="button-settings-note">Edite aqui o nome exibido nos três idiomas. Para botões que abrem links, edite também a URL. Para páginas internas, edite o texto de cada idioma. As alterações são salvas no Firestore e aparecem no aplicativo após a sincronização.</p>
+    <div class="section-body">
+      <p class="button-settings-note">Edite aqui o nome completo exibido nos três idiomas. Para botões que abrem links, edite a URL; para páginas internas, altere todo o conteúdo, inclusive textos longos. A seção de publicações de Conheça a UNILA fica separada acima.</p>
       <div id="buttonSettingsList"><p style="text-align:center; padding:20px; color:#94a3b8;">Carregando configurações dos botões...</p></div>
     </div>
   </div>
 
   <!-- Seção de Gerenciamento de Notícias -->
   <div id="newsManagerSection" class="section" style="display:none;">
-    <div class="section-header" onclick="this.nextElementSibling.classList.toggle('open')">
+    <div class="section-header" onclick="toggleExclusiveSection(this)" role="button" tabindex="0" aria-expanded="false">
       <h3>📰 Gerenciar Notícias</h3>
-      <span>▼</span>
+      <span class="accordion-arrow">▼</span>
     </div>
     <div class="section-body">
       <h4 id="newsFormTitle">Adicionar Nova Notícia</h4>
@@ -277,11 +312,11 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0;
 
 <!-- Seção de Gerenciamento de Usuários -->
 <div id="userManagerSection" class="section" style="display:none;">
-  <div class="section-header" onclick="this.nextElementSibling.classList.toggle('open')">
+  <div class="section-header" onclick="toggleExclusiveSection(this)" role="button" tabindex="0" aria-expanded="false">
     <h3>👥 Gerenciar Usuários</h3>
-    <span>▼</span>
+    <span class="accordion-arrow">▼</span>
   </div>
-  <div class="section-body open">
+  <div class="section-body">
     <p class="user-manager-note">Somente Fernando pode bloquear, banir ou desbloquear usuários. O bloqueio/banimento é salvo no Firestore usando o UID anônimo do Firebase e é aplicado globalmente no aplicativo.</p>
     <div class="user-toolbar">
       <input id="userSearch" type="search" placeholder="Pesquisar por nick ou UID..." oninput="renderAdminUsers()">
@@ -294,9 +329,9 @@ body { font-family: 'Segoe UI', sans-serif; background: #1a1a2e; color: #e0e0e0;
 
 <!-- Seção aditiva de moderação de denúncias -->
 <div id="ugcReportsManager" class="section" style="display:none;">
-  <div class="section-header" onclick="this.nextElementSibling.classList.toggle('open')">
+  <div class="section-header" onclick="toggleExclusiveSection(this)" role="button" tabindex="0" aria-expanded="false">
     <h3>🚩 Denúncias e Moderação</h3>
-    <span>▼</span>
+    <span class="accordion-arrow">▼</span>
   </div>
   <div class="section-body">
     <div class="ugc-report-toolbar">
@@ -349,22 +384,17 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 const auth = firebase.auth();
 
-const ADMIN_UID = "8NOLMsOmLXNkuQ8BE6IwF3Fh9Yj1";
-let adminFirebaseUid = null;
-let adminAuthReady = auth.currentUser ? Promise.resolve(auth.currentUser) : new Promise((resolve, reject) => {
-  const unsub = auth.onAuthStateChanged(user => {
-    if (user) { adminFirebaseUid = user.uid; unsub(); resolve(user); }
-  });
-  auth.signInAnonymously().catch(reject);
-});
-adminAuthReady.then(user => { adminFirebaseUid = user.uid; }).catch(err => console.error('Erro de autenticação anônima do painel:', err));
+const ADMIN_EMAIL = "fernando2018a1986@gmail.com";
+let adminFirebaseUid = auth.currentUser ? auth.currentUser.uid : null;
+let adminAuthReady = Promise.resolve(auth.currentUser);
+auth.onAuthStateChanged(user => { adminFirebaseUid = user ? user.uid : null; });
 
 // CONFIGURAÇÃO CLOUDINARY
 const CLOUDINARY_CLOUD_NAME = 'dthnn5flq';
 const CLOUDINARY_API_KEY = '444299785184934';
 const CLOUDINARY_API_SECRET = '3dNWqkn-MH4p3wF75K_vgb1opVs';
 
-const MASTER_PASS = "unila2026";
+let adminSessionAuthorized = false;
 
 let newsImageFile = null;
 let newsVideoFile = null;
@@ -986,9 +1016,9 @@ async function loadData() {
     } catch(e) {}
     html += `
       <div class="section">
-        <div class="section-header" onclick="this.nextElementSibling.classList.toggle('open')">
+        <div class="section-header" onclick="toggleExclusiveSection(this)" role="button" tabindex="0" aria-expanded="false">
           <h3>${btn.name}</h3>
-          <span>▼</span>
+          <span class="accordion-arrow">▼</span>
         </div>
         <div class="section-body">
           <p style="font-size:11px; color:#94a3b8; margin-bottom:12px; font-style:italic;">${btn.description}</p>
@@ -1117,6 +1147,50 @@ function escapeButtonSettingValue(value) {
   });
 }
 
+function toggleExclusiveSection(header) {
+  const body = header.nextElementSibling;
+  if (!body) return;
+  const wasOpen = body.classList.contains('open');
+  document.querySelectorAll('.section-body.open').forEach(openBody => openBody.classList.remove('open'));
+  document.querySelectorAll('.section-header.active').forEach(activeHeader => {
+    activeHeader.classList.remove('active');
+    activeHeader.setAttribute('aria-expanded', 'false');
+  });
+  document.querySelectorAll('.button-setting-body.open').forEach(openBody => openBody.classList.remove('open'));
+  document.querySelectorAll('.button-setting-header.active').forEach(activeHeader => {
+    activeHeader.classList.remove('active');
+    activeHeader.setAttribute('aria-expanded', 'false');
+  });
+  if (!wasOpen) {
+    body.classList.add('open');
+    header.classList.add('active');
+    header.setAttribute('aria-expanded', 'true');
+  }
+}
+
+function toggleExclusiveButton(header) {
+  const body = header.nextElementSibling;
+  if (!body) return;
+  const wasOpen = body.classList.contains('open');
+  document.querySelectorAll('.button-setting-body.open').forEach(openBody => openBody.classList.remove('open'));
+  document.querySelectorAll('.button-setting-header.active').forEach(activeHeader => {
+    activeHeader.classList.remove('active');
+    activeHeader.setAttribute('aria-expanded', 'false');
+  });
+  if (!wasOpen) {
+    body.classList.add('open');
+    header.classList.add('active');
+    header.setAttribute('aria-expanded', 'true');
+  }
+}
+
+document.addEventListener('keydown', event => {
+  if (event.key !== 'Enter' && event.key !== ' ') return;
+  const target = event.target;
+  if (target && target.classList.contains('section-header')) { event.preventDefault(); toggleExclusiveSection(target); }
+  if (target && target.classList.contains('button-setting-header')) { event.preventDefault(); toggleExclusiveButton(target); }
+});
+
 async function loadButtonSettings() {
   const list = document.getElementById('buttonSettingsList');
   if (!list) return;
@@ -1128,7 +1202,7 @@ async function loadButtonSettings() {
   } catch (e) {
     showToast('❌ Não foi possível carregar as configurações dos botões.', 'error');
   }
-  list.innerHTML = buttonSettings.map((setting) => {
+  list.innerHTML = buttonSettings.filter(setting => setting.id !== 'conheca').map((setting) => {
     const labelFields = ['pt','fr','es'].map(lang => `
       <div class="form-group">
         <label for="buttonLabel_${setting.id}_${lang}">Nome exibido (${lang.toUpperCase()})</label>
@@ -1145,47 +1219,67 @@ async function loadButtonSettings() {
     } else if (setting.type === 'page') {
       contentField = ['pt','fr','es'].map(lang => `
         <div class="form-group">
-          <label for="buttonContent_${setting.id}_${lang}">Conteúdo da página (${lang.toUpperCase()})</label>
-          <textarea id="buttonContent_${setting.id}_${lang}" placeholder="Texto exibido ao abrir a página">${escapeButtonSettingValue(values[`button_content_${setting.contentId}_${lang}`] ?? setting.content[lang])}</textarea>
+          <label for="buttonContent_${setting.id}_${lang}">Texto completo da página (${lang.toUpperCase()})</label>
+          <textarea class="full-page-text" rows="10" id="buttonContent_${setting.id}_${lang}" placeholder="Edite aqui todo o texto exibido ao abrir a página">${escapeButtonSettingValue(values[`button_content_${setting.contentId}_${lang}`] ?? setting.content[lang])}</textarea>
         </div>`).join('');
-    } else if (setting.type === 'media') {
-      contentField = `
-        <div id="conhecaMediaManager" class="conheca-media-manager">
-          <p class="button-settings-note">Este botão aceita somente fotos e vídeos. Não existem campos de título, texto ou descrição. As mídias publicadas aqui são exibidas automaticamente no app principal.</p>
-          <input type="hidden" id="conhecaMediaId" />
-          <div class="upload-buttons-row">
-            <div>
-              <input type="file" id="conhecaImageUpload" accept="image/*" style="display:none;">
-              <button type="button" class="btn-upload" onclick="document.getElementById('conhecaImageUpload').click()">📷 Adicionar foto</button>
-            </div>
-            <div>
-              <input type="file" id="conhecaVideoUpload" accept="video/*" style="display:none;">
-              <button type="button" class="btn-upload" style="background:#7c3aed;" onclick="document.getElementById('conhecaVideoUpload').click()">🎥 Adicionar vídeo</button>
-            </div>
-          </div>
-          <div id="conhecaMediaPreview" class="media-preview" style="display:none;"></div>
-          <div class="conheca-media-options">
-            <label><input type="checkbox" id="conhecaRemoveImage"> Remover foto atual</label>
-            <label><input type="checkbox" id="conhecaRemoveVideo"> Remover vídeo atual</label>
-          </div>
-          <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button type="button" class="btn-save" onclick="saveConhecaMedia()" style="flex:1;">➕ Publicar mídias</button>
-            <button type="button" class="btn-cancel" onclick="resetConhecaMediaForm()" style="flex:1;">Limpar</button>
-          </div>
-          <div id="conhecaMediaList" style="margin-top:15px;"><div class="ugc-report-empty">Carregando mídias...</div></div>
-        </div>`;
     }
     return `
       <div class="button-setting-card">
-        <h4>${escapeButtonSettingValue(setting.name)}</h4>
-        <div class="button-setting-grid">
-          ${labelFields}
-          ${contentField}
+        <div class="button-setting-header" onclick="toggleExclusiveButton(this)" role="button" tabindex="0" aria-expanded="false">
+          <h4>${escapeButtonSettingValue(setting.name)}</h4>
+          <span class="accordion-arrow">▼</span>
         </div>
-        <button class="btn-save" onclick="saveButtonSetting('${setting.id}')">💾 Salvar este botão</button>
+        <div class="button-setting-body">
+          <div class="button-setting-grid">
+            ${labelFields}
+            ${contentField}
+          </div>
+          <button class="btn-save" onclick="saveButtonSetting('${setting.id}')">💾 Salvar este botão</button>
+        </div>
       </div>`;
   }).join('');
-  if (buttonSettings.some(setting => setting.type === 'media')) loadConhecaMediaAdmin();
+}
+
+function loadConhecaStandalone() {
+  const manager = document.getElementById('conhecaStandaloneManager');
+  if (!manager) return;
+  manager.innerHTML = `
+    <div id="conhecaMediaManager" class="conheca-media-manager">
+      <p class="button-settings-note">Esta função aceita somente fotos, vídeos e uma legenda opcional. O único metadado da publicação é a data. Não há campos de título ou descrição; as mídias publicadas são exibidas automaticamente no app principal.</p>
+      <input type="hidden" id="conhecaMediaId" />
+      <div class="upload-buttons-row">
+        <div>
+          <input type="file" id="conhecaImageUpload" accept="image/*" style="display:none;">
+          <button type="button" class="btn-upload" onclick="document.getElementById('conhecaImageUpload').click()">📷 Adicionar foto</button>
+        </div>
+        <div>
+          <input type="file" id="conhecaVideoUpload" accept="video/*" style="display:none;">
+          <button type="button" class="btn-upload" style="background:#7c3aed;" onclick="document.getElementById('conhecaVideoUpload').click()">🎥 Adicionar vídeo</button>
+        </div>
+        <div>
+          <input type="file" id="conhecaVideoThumbUpload" accept="image/*" style="display:none;">
+          <button type="button" class="btn-upload" style="background:#8b5cf6;" onclick="document.getElementById('conhecaVideoThumbUpload').click()">🖼️ Escolher capa do vídeo</button>
+        </div>
+      </div>
+      <div id="conhecaMediaPreview" class="media-preview" style="display:none;"></div>
+      <div id="conhecaVideoThumbPreview" class="conheca-thumb-preview" style="display:none;"></div>
+      <div class="form-group" style="margin-top:12px;">
+        <label for="conhecaCaption">Legenda opcional da foto ou vídeo</label>
+        <input type="text" id="conhecaCaption" maxlength="180" placeholder="Digite uma legenda para esta mídia...">
+        <small style="display:block;color:#94a3b8;margin-top:5px;">A data da publicação será registrada automaticamente.</small>
+      </div>
+      <div class="conheca-media-options">
+        <label><input type="checkbox" id="conhecaRemoveImage"> Remover foto atual</label>
+        <label><input type="checkbox" id="conhecaRemoveVideo"> Remover vídeo atual</label>
+        <label><input type="checkbox" id="conhecaRemoveVideoThumb"> Remover capa atual</label>
+      </div>
+      <div style="display:flex;gap:10px;flex-wrap:wrap;">
+        <button type="button" class="btn-save" onclick="saveConhecaMedia()" style="flex:1;">➕ Publicar mídias</button>
+        <button type="button" class="btn-cancel" onclick="resetConhecaMediaForm()" style="flex:1;">Limpar</button>
+      </div>
+      <div id="conhecaMediaList" style="margin-top:15px;"><div class="ugc-report-empty">Carregando publicações...</div></div>
+    </div>`;
+  loadConhecaMediaAdmin();
 }
 
 async function saveButtonSetting(id) {
@@ -1243,6 +1337,7 @@ let conhecaMediaCache = {};
 let conhecaMediaEditingId = null;
 let conhecaImageFile = null;
 let conhecaVideoFile = null;
+let conhecaVideoThumbFile = null;
 
 function safeConhecaMediaUrl(value) {
   const url = String(value || '').trim();
@@ -1261,17 +1356,102 @@ function getConhecaMedia(item) {
   const legacyVideo = item && item.mediaType === 'video' ? item.mediaUrl : '';
   return {
     imageUrl: safeConhecaMediaUrl(modernFields ? item.imageUrl : legacyImage),
-    videoUrl: safeConhecaMediaUrl(modernFields ? item.videoUrl : legacyVideo)
+    videoUrl: safeConhecaMediaUrl(modernFields ? item.videoUrl : legacyVideo),
+    videoThumbUrl: safeConhecaMediaUrl(item && item.videoThumbUrl)
   };
+}
+
+function getConhecaCaption(item, kind) {
+  const specific = kind === 'image' ? item && item.imageCaption : item && item.videoCaption;
+  return String(specific || (item && item.caption) || '').trim();
+}
+
+function formatConhecaBytes(bytes) {
+  const value = Number(bytes);
+  if (!Number.isFinite(value) || value <= 0) return '';
+  if (value < 1024) return value + ' B';
+  if (value < 1024 * 1024) return (value / 1024).toFixed(1) + ' KB';
+  if (value < 1024 * 1024 * 1024) return (value / (1024 * 1024)).toFixed(1) + ' MB';
+  return (value / (1024 * 1024 * 1024)).toFixed(1) + ' GB';
+}
+
+function formatConhecaDuration(seconds) {
+  const value = Number(seconds);
+  if (!Number.isFinite(value) || value <= 0) return '';
+  const minutes = Math.floor(value / 60);
+  const remaining = Math.round(value % 60).toString().padStart(2, '0');
+  return `${minutes}:${remaining}`;
+}
+
+function formatConhecaMediaInfo(info) {
+  if (!info) return '';
+  const parts = [];
+  if (info.width && info.height) parts.push(`${info.width} × ${info.height}px`);
+  if (info.orientation) parts.push(info.orientation);
+  if (info.mimeType) parts.push(info.mimeType);
+  const size = formatConhecaBytes(info.fileSize);
+  if (size) parts.push(size);
+  const duration = formatConhecaDuration(info.durationSeconds);
+  if (duration) parts.push(`duração ${duration}`);
+  return parts.join(' · ');
+}
+
+function readConhecaFileMetadata(file, kind) {
+  return new Promise(resolve => {
+    if (!file) return resolve(null);
+    const base = { fileName: file.name || '', fileSize: file.size || 0, mimeType: file.type || (kind === 'image' ? 'image/*' : 'video/*') };
+    if (kind === 'image') {
+      const url = URL.createObjectURL(file);
+      const image = new Image();
+      image.onload = () => {
+        base.width = image.naturalWidth || image.width;
+        base.height = image.naturalHeight || image.height;
+        base.orientation = base.width === base.height ? 'quadrada' : base.width > base.height ? 'horizontal' : 'vertical';
+        URL.revokeObjectURL(url);
+        resolve(base);
+      };
+      image.onerror = () => { URL.revokeObjectURL(url); resolve(base); };
+      image.src = url;
+      return;
+    }
+    const url = URL.createObjectURL(file);
+    const video = document.createElement('video');
+    video.preload = 'metadata';
+    video.onloadedmetadata = () => {
+      base.width = video.videoWidth || 0;
+      base.height = video.videoHeight || 0;
+      base.orientation = base.width === base.height ? 'quadrada' : base.width > base.height ? 'horizontal' : 'vertical';
+      base.durationSeconds = Number.isFinite(video.duration) ? Math.round(video.duration * 10) / 10 : 0;
+      URL.revokeObjectURL(url);
+      resolve(base);
+    };
+    video.onerror = () => { URL.revokeObjectURL(url); resolve(base); };
+    video.src = url;
+  });
+}
+
+function formatConhecaPublishedAt(item) {
+  const raw = item && (item.publishedAt || item.updatedAt || item.createdAt);
+  let date = null;
+  if (raw && typeof raw.toDate === 'function') date = raw.toDate();
+  else if (raw && typeof raw.seconds === 'number') date = new Date(raw.seconds * 1000);
+  else if (typeof raw === 'number') date = new Date(raw);
+  else if (typeof raw === 'string') date = new Date(raw);
+  if (!date || Number.isNaN(date.getTime())) return 'Data não disponível';
+  return date.toLocaleDateString('pt-BR');
 }
 
 function renderConhecaAdminMedia(item) {
   const media = getConhecaMedia(item);
+  const caption = getConhecaCaption(item);
+  const publishedAt = escapeConhecaMedia(formatConhecaPublishedAt(item));
+  const dateOverlay = `<span class="conheca-media-date-overlay">📅 ${publishedAt}</span>`;
   let html = '<div class="conheca-admin-media">';
-  if (media.imageUrl) html += `<img src="${escapeConhecaMedia(media.imageUrl)}" alt="Foto de Conheça a UNILA">`;
-  if (media.videoUrl) html += `<video src="${escapeConhecaMedia(media.videoUrl)}" controls preload="metadata" aria-label="Vídeo de Conheça a UNILA"></video>`;
+  if (media.imageUrl) html += `<figure><div class="conheca-media-frame"><img src="${escapeConhecaMedia(media.imageUrl)}" alt="Foto de Conheça a UNILA">${dateOverlay}</div>${caption ? `<figcaption>${escapeConhecaMedia(caption)}</figcaption>` : ''}</figure>`;
+  if (media.videoUrl) html += `<figure><div class="conheca-media-frame"><video src="${escapeConhecaMedia(media.videoUrl)}" controls preload="metadata" poster="${escapeConhecaMedia(media.videoThumbUrl)}" aria-label="Vídeo de Conheça a UNILA"></video>${dateOverlay}</div>${caption ? `<figcaption>${escapeConhecaMedia(caption)}</figcaption>` : ''}</figure>`;
   if (!media.imageUrl && !media.videoUrl) html += '<span style="color:#94a3b8;font-size:12px;">Sem mídia</span>';
-  return html + '</div>';
+  html += '</div>';
+  return html;
 }
 
 function updateConhecaMediaPreview() {
@@ -1293,6 +1473,8 @@ function updateConhecaMediaPreview() {
     return;
   }
   preview.style.display = 'flex';
+  const existingRecord = conhecaMediaEditingId && conhecaMediaCache[conhecaMediaEditingId] ? conhecaMediaCache[conhecaMediaEditingId] : {publishedAt: Date.now()};
+  const previewDate = escapeConhecaMedia(formatConhecaPublishedAt(existingRecord));
   entries.forEach(entry => {
     const item = document.createElement('div');
     item.className = 'media-preview-item';
@@ -1301,24 +1483,50 @@ function updateConhecaMediaPreview() {
     media.alt = entry.label;
     if (entry.kind === 'video') { media.controls = true; media.muted = true; }
     item.appendChild(media);
+    const dateBadge = document.createElement('span');
+    dateBadge.className = 'conheca-preview-date-overlay';
+    dateBadge.textContent = '📅 ' + previewDate;
+    item.appendChild(dateBadge);
     preview.appendChild(item);
-    if (entry.temporary) setTimeout(() => URL.revokeObjectURL(entry.src), 1000);
+      if (entry.temporary) setTimeout(() => URL.revokeObjectURL(entry.src), 1000);
   });
+  updateConhecaVideoThumbPreview();
+}
+
+function updateConhecaVideoThumbPreview() {
+  const preview = document.getElementById('conhecaVideoThumbPreview');
+  if (!preview) return;
+  const existing = conhecaMediaEditingId && conhecaMediaCache[conhecaMediaEditingId] ? getConhecaMedia(conhecaMediaCache[conhecaMediaEditingId]) : {videoThumbUrl:''};
+  const removeThumb = document.getElementById('conhecaRemoveVideoThumb')?.checked === true;
+  const source = conhecaVideoThumbFile ? URL.createObjectURL(conhecaVideoThumbFile) : (removeThumb ? '' : existing.videoThumbUrl);
+  if (!source) { preview.innerHTML = ''; preview.style.display = 'none'; return; }
+  preview.style.display = 'block';
+  preview.innerHTML = `<span>${conhecaVideoThumbFile ? 'Nova capa selecionada:' : 'Capa atual:'}</span><img src="${escapeConhecaMedia(source)}" alt="Prévia da capa do vídeo">`;
+  if (conhecaVideoThumbFile) setTimeout(() => URL.revokeObjectURL(source), 1000);
 }
 
 function resetConhecaMediaForm() {
   conhecaMediaEditingId = null;
   conhecaImageFile = null;
   conhecaVideoFile = null;
+  conhecaVideoThumbFile = null;
   const image = document.getElementById('conhecaImageUpload');
   const video = document.getElementById('conhecaVideoUpload');
+  const thumb = document.getElementById('conhecaVideoThumbUpload');
   const removeImage = document.getElementById('conhecaRemoveImage');
   const removeVideo = document.getElementById('conhecaRemoveVideo');
+  const removeThumb = document.getElementById('conhecaRemoveVideoThumb');
   const id = document.getElementById('conhecaMediaId');
   if (image) image.value = '';
   if (video) video.value = '';
+  if (thumb) thumb.value = '';
   if (removeImage) removeImage.checked = false;
   if (removeVideo) removeVideo.checked = false;
+  if (removeThumb) removeThumb.checked = false;
+  const thumbPreview = document.getElementById('conhecaVideoThumbPreview');
+  if (thumbPreview) { thumbPreview.innerHTML = ''; thumbPreview.style.display = 'none'; }
+  const caption = document.getElementById('conhecaCaption');
+  if (caption) caption.value = '';
   if (id) id.value = '';
   const preview = document.getElementById('conhecaMediaPreview');
   if (preview) { preview.innerHTML = ''; preview.style.display = 'none'; }
@@ -1331,7 +1539,9 @@ function bindConhecaMediaInputs() {
   const video = document.getElementById('conhecaVideoUpload');
   const removeImage = document.getElementById('conhecaRemoveImage');
   const removeVideo = document.getElementById('conhecaRemoveVideo');
-  if (!image || !video) return;
+  const thumb = document.getElementById('conhecaVideoThumbUpload');
+  const removeThumb = document.getElementById('conhecaRemoveVideoThumb');
+  if (!image || !video || !thumb) return;
   image.onchange = function(event) {
     const file = event.target.files[0];
     if (file && !file.type.startsWith('image/')) { showToast('Selecione somente uma foto.', 'error'); event.target.value = ''; return; }
@@ -1344,8 +1554,15 @@ function bindConhecaMediaInputs() {
     conhecaVideoFile = file || null;
     updateConhecaMediaPreview();
   };
+  thumb.onchange = function(event) {
+    const file = event.target.files[0];
+    if (file && !file.type.startsWith('image/')) { showToast('A capa deve ser uma imagem.', 'error'); event.target.value = ''; return; }
+    conhecaVideoThumbFile = file || null;
+    updateConhecaVideoThumbPreview();
+  };
   if (removeImage) removeImage.onchange = updateConhecaMediaPreview;
   if (removeVideo) removeVideo.onchange = updateConhecaMediaPreview;
+  if (removeThumb) removeThumb.onchange = updateConhecaVideoThumbPreview;
 }
 
 async function loadConhecaMediaAdmin() {
@@ -1358,7 +1575,7 @@ async function loadConhecaMediaAdmin() {
     conhecaMediaCache = {};
     const items = snapshot.docs.map(doc => ({id:doc.id, ...doc.data()}))
       .filter(item => getConhecaMedia(item).imageUrl || getConhecaMedia(item).videoUrl)
-      .sort((a, b) => Number(b.updatedAt || b.createdAt || 0) - Number(a.updatedAt || a.createdAt || 0));
+      .sort((a, b) => Number(b.publishedAt || b.updatedAt || b.createdAt || 0) - Number(a.publishedAt || a.updatedAt || a.createdAt || 0));
     if (!items.length) {
       list.innerHTML = '<div class="ugc-report-empty">Nenhuma foto ou vídeo publicado ainda.</div>';
       return;
@@ -1368,7 +1585,7 @@ async function loadConhecaMediaAdmin() {
       ${renderConhecaAdminMedia(item)}
       <div class="news-card-actions">
         <button type="button" class="btn-action btn-edit" onclick="editConhecaMedia('${escapeConhecaMedia(item.id)}')">✏️ Editar mídia</button>
-        <button type="button" class="btn-action btn-delete" onclick="deleteConhecaMedia('${escapeConhecaMedia(item.id)}','${escapeConhecaMedia(item.imagePublicId || '')}','${escapeConhecaMedia(item.videoPublicId || '')}')">🗑️ Excluir mídia</button>
+        <button type="button" class="btn-action btn-delete" onclick="deleteConhecaMedia('${escapeConhecaMedia(item.id)}','${escapeConhecaMedia(item.imagePublicId || '')}','${escapeConhecaMedia(item.videoPublicId || '')}','${escapeConhecaMedia(item.videoThumbPublicId || '')}')">🗑️ Excluir mídia</button>
       </div>
     </div>`).join('');
   } catch (e) {
@@ -1383,11 +1600,15 @@ function editConhecaMedia(id) {
   conhecaMediaEditingId = id;
   conhecaImageFile = null;
   conhecaVideoFile = null;
+  conhecaVideoThumbFile = null;
   document.getElementById('conhecaMediaId').value = id;
   document.getElementById('conhecaImageUpload').value = '';
   document.getElementById('conhecaVideoUpload').value = '';
+  document.getElementById('conhecaVideoThumbUpload').value = '';
   document.getElementById('conhecaRemoveImage').checked = false;
   document.getElementById('conhecaRemoveVideo').checked = false;
+  document.getElementById('conhecaRemoveVideoThumb').checked = false;
+  document.getElementById('conhecaCaption').value = getConhecaCaption(item);
   document.querySelector('#conhecaMediaManager .btn-save').textContent = '💾 Salvar mídias';
   updateConhecaMediaPreview();
   document.getElementById('conhecaMediaManager').scrollIntoView({behavior:'smooth', block:'start'});
@@ -1396,15 +1617,23 @@ function editConhecaMedia(id) {
 async function saveConhecaMedia() {
   const imageFile = document.getElementById('conhecaImageUpload')?.files[0] || null;
   const videoFile = document.getElementById('conhecaVideoUpload')?.files[0] || null;
+  const videoThumbFile = document.getElementById('conhecaVideoThumbUpload')?.files[0] || null;
   const removeImage = document.getElementById('conhecaRemoveImage')?.checked === true;
   const removeVideo = document.getElementById('conhecaRemoveVideo')?.checked === true;
+  let removeVideoThumb = document.getElementById('conhecaRemoveVideoThumb')?.checked === true;
   const id = document.getElementById('conhecaMediaId')?.value.trim() || '';
+  const caption = document.getElementById('conhecaCaption')?.value.trim() || '';
   const existing = id && conhecaMediaCache[id] ? conhecaMediaCache[id] : {};
   const oldMedia = getConhecaMedia(existing);
   if (!imageFile && !videoFile && !oldMedia.imageUrl && !oldMedia.videoUrl) {
     showToast('Adicione uma foto ou um vídeo.', 'error');
     return;
   }
+  if (videoThumbFile && !videoFile && !oldMedia.videoUrl) {
+    showToast('Adicione um vídeo antes de escolher a capa.', 'error');
+    return;
+  }
+  if (removeVideo && !videoFile) removeVideoThumb = true;
   if (removeImage && !imageFile && !oldMedia.videoUrl && !videoFile) {
     showToast('Mantenha pelo menos uma mídia ou exclua o registro.', 'error');
     return;
@@ -1421,6 +1650,8 @@ async function saveConhecaMedia() {
     let videoUrl = removeVideo ? '' : oldMedia.videoUrl;
     let imagePublicId = removeImage ? '' : (existing.imagePublicId || '');
     let videoPublicId = removeVideo ? '' : (existing.videoPublicId || '');
+    let videoThumbUrl = (removeVideo || removeVideoThumb) ? '' : (existing.videoThumbUrl || '');
+    let videoThumbPublicId = (removeVideo || removeVideoThumb) ? '' : (existing.videoThumbPublicId || '');
     if (imageFile) {
       const upload = await uploadToCloudinary(imageFile, 'image');
       if (!upload) throw new Error('Falha no upload da foto.');
@@ -1435,12 +1666,26 @@ async function saveConhecaMedia() {
       videoUrl = upload.url;
       videoPublicId = upload.public_id || '';
     }
+    if (videoThumbFile) {
+      const upload = await uploadToCloudinary(videoThumbFile, 'image');
+      if (!upload) throw new Error('Falha ao enviar a capa do vídeo.');
+      if (existing.videoThumbPublicId) await deleteFromCloudinary(existing.videoThumbPublicId);
+      videoThumbUrl = upload.url;
+      videoThumbPublicId = upload.public_id || '';
+    }
     if (removeImage && existing.imagePublicId && !imageFile) await deleteFromCloudinary(existing.imagePublicId);
     if (removeVideo && existing.videoPublicId && !videoFile) await deleteFromCloudinary(existing.videoPublicId);
+    if (removeVideoThumb && existing.videoThumbPublicId && !videoThumbFile) await deleteFromCloudinary(existing.videoThumbPublicId);
     const now = Date.now();
-    const payload = {imageUrl, imagePublicId, videoUrl, videoPublicId, mediaUrl:'', mediaType:'', updatedAt:now, updatedBy:ADMIN_UID};
-    if (id) await db.collection('conhecaUnila').doc(id).set(payload, {merge:true});
-    else await db.collection('conhecaUnila').add({...payload, createdAt:now, createdBy:ADMIN_UID});
+    const publishedAt = existing.publishedAt || existing.createdAt || now;
+    const payload = {imageUrl, imagePublicId, videoUrl, videoPublicId, videoThumbUrl, videoThumbPublicId, caption, publishedAt, mediaUrl:'', mediaType:'', updatedAt:now, updatedBy:adminFirebaseUid || ADMIN_EMAIL};
+    if (id) {
+      payload.imageInfo = firebase.firestore.FieldValue.delete();
+      payload.videoInfo = firebase.firestore.FieldValue.delete();
+      await db.collection('conhecaUnila').doc(id).set(payload, {merge:true});
+    } else {
+      await db.collection('conhecaUnila').add({...payload, createdAt:now, createdBy:adminFirebaseUid || ADMIN_EMAIL});
+    }
     showToast(id ? '✅ Mídias atualizadas no app.' : '✅ Mídias publicadas no app.');
     resetConhecaMediaForm();
     await loadConhecaMediaAdmin();
@@ -1452,11 +1697,12 @@ async function saveConhecaMedia() {
   }
 }
 
-async function deleteConhecaMedia(id, imagePublicId, videoPublicId) {
-  if (!confirm('Excluir esta foto e/ou vídeo? Esta ação não pode ser desfeita.')) return;
+async function deleteConhecaMedia(id, imagePublicId, videoPublicId, videoThumbPublicId) {
+  if (!confirm('Excluir esta foto, vídeo e capa? Esta ação não pode ser desfeita.')) return;
   try {
     if (imagePublicId) await deleteFromCloudinary(imagePublicId);
     if (videoPublicId) await deleteFromCloudinary(videoPublicId);
+    if (videoThumbPublicId) await deleteFromCloudinary(videoThumbPublicId);
     await db.collection('conhecaUnila').doc(id).delete();
     if (conhecaMediaEditingId === id) resetConhecaMediaForm();
     showToast('🗑️ Mídias removidas do app.');
@@ -1478,27 +1724,43 @@ async function generateSignature(params, secret) {
 }
 
 async function checkLogin() {
+  const email = document.getElementById('adminEmail').value.trim().toLowerCase();
   const pass = document.getElementById('adminPass').value;
-  if (pass !== MASTER_PASS) { showToast("Senha incorreta!", "error"); return; }
+  if (email !== ADMIN_EMAIL) { showToast('Use o e-mail administrativo configurado no Firebase.', 'error'); return; }
+  if (!pass) { showToast('Informe a senha da conta Firebase.', 'error'); return; }
+  const loginButton = document.querySelector('#loginScreen button');
+  if (loginButton) { loginButton.disabled = true; loginButton.textContent = 'Entrando...'; }
   try {
-    await adminAuthReady;
-    if (adminFirebaseUid !== ADMIN_UID) {
-      showToast("Acesso negado: este dispositivo não é o administrador principal.", "error");
-      return;
+    const credentials = await auth.signInWithEmailAndPassword(email, pass);
+    const user = credentials.user;
+    if (!user || !user.email || user.email.toLowerCase() !== ADMIN_EMAIL) {
+      await auth.signOut();
+      throw new Error('Conta não autorizada para o painel.');
     }
+    adminFirebaseUid = user.uid;
+    adminAuthReady = Promise.resolve(user);
+    adminSessionAuthorized = true;
     document.getElementById('loginScreen').style.display = 'none';
     document.getElementById('adminContent').style.display = 'block';
     document.getElementById('newsManagerSection').style.display = 'block';
     document.getElementById('userManagerSection').style.display = 'block';
-    loadData(); loadButtonSettings(); loadNews(); loadAdminUsers(); listenAdminRestrictions(); loadUGCReports();
+    loadConhecaStandalone(); loadData(); loadButtonSettings(); loadNews(); loadAdminUsers(); listenAdminRestrictions(); loadUGCReports();
     document.getElementById('ugcReportsManager').style.display = 'block';
   } catch (e) {
-    console.error(e);
-    showToast("Não foi possível autenticar o administrador.", "error");
+    console.error('Erro no login Firebase:', e);
+    const code = e && e.code ? e.code : '';
+    const message = code === 'auth/invalid-credential' || code === 'auth/wrong-password' || code === 'auth/user-not-found'
+      ? 'E-mail ou senha do Firebase incorretos.'
+      : code === 'auth/operation-not-allowed'
+        ? 'Ative o provedor E-mail/senha em Firebase Authentication.'
+        : 'Não foi possível entrar: ' + (e.message || 'verifique a configuração do Firebase.');
+    showToast(message, 'error');
+  } finally {
+    if (loginButton) { loginButton.disabled = false; loginButton.textContent = 'Entrar'; }
   }
 }
 
-document.getElementById('adminPass').addEventListener('keypress', function(e) { if (e.key === 'Enter') checkLogin(); });
+['adminEmail', 'adminPass'].forEach(id => document.getElementById(id).addEventListener('keypress', function(e) { if (e.key === 'Enter') checkLogin(); }));
 </script>
 
 <script id="user-management-script">
@@ -1527,12 +1789,14 @@ function renderAdminUsers() {
     if (u.banned) { statusClass = 'banned'; statusText = '⛔ Banido'; }
     else if (u.blocked) { statusClass = 'blocked'; statusText = '🚫 Bloqueado'; }
     let actions = '';
-    if (u.uid === ADMIN_UID) {
+    if (u.uid === adminFirebaseUid) {
       actions = '<span style="color:#22c55e;font-size:12px;">👑 Administrador principal</span>';
     } else if (!u.uid) {
       actions = '<span style="color:#f59e0b;font-size:12px;">UID não registrado</span>';
-    } else if (u.blocked || u.banned) {
-      actions = `<button class="btn-action btn-edit" onclick="setAdminUserStatus('${escapeUserAdmin(u.uid)}','${escapeUserAdmin(u.nick)}','unblock')">🔓 Desbloquear / desbanir</button>`;
+    } else if (u.banned) {
+      actions = `<button class="btn-action btn-edit" onclick="setAdminUserStatus('${escapeUserAdmin(u.uid)}','${escapeUserAdmin(u.nick)}','unblock')">🔓 Desbanir / desbloquear</button>`;
+    } else if (u.blocked) {
+      actions = `<button class="btn-action btn-edit" onclick="setAdminUserStatus('${escapeUserAdmin(u.uid)}','${escapeUserAdmin(u.nick)}','unblock')">🔓 Desbloquear</button> <button class="btn-action btn-delete" onclick="setAdminUserStatus('${escapeUserAdmin(u.uid)}','${escapeUserAdmin(u.nick)}','ban')">⛔ Banir</button>`;
     } else {
       actions = `<button class="btn-action" style="background:#d97706;color:#fff;" onclick="setAdminUserStatus('${escapeUserAdmin(u.uid)}','${escapeUserAdmin(u.nick)}','block')">🚫 Bloquear</button> <button class="btn-action btn-delete" onclick="setAdminUserStatus('${escapeUserAdmin(u.uid)}','${escapeUserAdmin(u.nick)}','ban')">⛔ Banir</button>`;
     }
@@ -1553,7 +1817,7 @@ async function loadAdminUsers() {
   if (!list) return;
   try {
     await adminAuthReady;
-    if (adminFirebaseUid !== ADMIN_UID) { list.innerHTML = '<div class="ugc-report-empty">Acesso restrito ao administrador principal.</div>'; return; }
+    if (!adminSessionAuthorized) { list.innerHTML = '<div class="ugc-report-empty">Faça login para gerenciar usuários.</div>'; return; }
     list.innerHTML = '<div class="ugc-report-empty">Carregando usuários...</div>';
     const snap = await db.collection('users').get();
     adminUsersCache = [];
@@ -1574,11 +1838,11 @@ async function loadAdminUsers() {
 async function setAdminUserStatus(uid, nick, action) {
   try {
     await adminAuthReady;
-    if (adminFirebaseUid !== ADMIN_UID) { showToast('Acesso negado.', 'error'); return; }
-    if (!uid || uid === ADMIN_UID) { showToast('O administrador principal não pode ser bloqueado ou banido.', 'error'); return; }
+    if (!adminSessionAuthorized) { showToast('Faça login para administrar usuários.', 'error'); return; }
+    if (!uid || uid === adminFirebaseUid) { showToast('O administrador principal não pode ser bloqueado ou banido.', 'error'); return; }
     const text = action === 'ban' ? `BANIR ${nick}?` : action === 'block' ? `Bloquear ${nick}?` : `Desbloquear ${nick}?`;
     if (!confirm(text)) return;
-    const payload = { uid, nick, updatedAt: Date.now(), updatedBy: ADMIN_UID, blocked: false, banned: false };
+    const payload = { uid, nick, updatedAt: Date.now(), updatedBy: adminFirebaseUid || ADMIN_EMAIL, blocked: false, banned: false };
     if (action === 'block') payload.blocked = true;
     if (action === 'ban') payload.banned = true;
     await db.collection('bannedUsers').doc(uid).set(payload, { merge: true });
